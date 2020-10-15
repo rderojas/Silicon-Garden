@@ -21,8 +21,18 @@ class PID:
     def change_setpoint(self, new_setpoint: float) -> None:
         self.r: float = new_setpoint
 
-    def update(self, error) -> float:
+    def get_time(self):
+        return self.prev_time
 
+    def __str__(self):
+        return_string = f"PID Controller \n"
+        values = f"P: {self.Kp} - I: {self.Ki} - D: {self.Kd}"
+        return return_string + values
+
+    def update(self, output):
+        return self.update_from_error(self.r - output)
+
+    def update_from_error(self, error) -> float:
         # Initialize the input
         u: float = 0.0
 
@@ -33,6 +43,7 @@ class PID:
         curr_time: float = time.time()
 
         if self.prev_error is not None:
+
             # Update u using the running integral
             time_diff = curr_time - self.prev_time
             avg_error = (error + self.prev_error) / 2
