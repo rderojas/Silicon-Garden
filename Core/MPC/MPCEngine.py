@@ -47,12 +47,12 @@ class MPC:
             self.model.update(step)
             time_passed+=self.model.timestep
             if time_passed > self.timestep:
-                input_s.append(self.model.get_system_output()[self.monitored_var])
+                input_s.append(self.model.get_system_output()[0])
                 time_passed = 0
 
         # plt.plot(input_s)
         # plt.show()
-        return np.array([input_s])
+        return np.array(input_s)
 
     # Using the discrete model for state space evolution we compute step evolution matrices
     # For both past and future inputs
@@ -61,14 +61,14 @@ class MPC:
         for i in range(self.control_horizon):
             j=0
             while i + j < self.prediction_horizon:
-                step_matrix_future[i+j][i] =  self.S[self.monitored_var][j]
+                step_matrix_future[i+j][i] =  self.S[j]
                 j+=1
         step_matrix_past = np.zeros((self.prediction_horizon, self.model_length - 2))
 
         for i in range(self.prediction_horizon):
             start_ix = 2
             for j in range(self.model_length - 2 - i):
-                step_matrix_past[i][j] = self.S[self.monitored_var][j + i + 1]
+                step_matrix_past[i][j] = self.S[j + i + 1]
             start_ix +=1
         return step_matrix_past, step_matrix_future
 
@@ -77,8 +77,8 @@ class MPC:
 
 
     def compute_disturbance_vector(self, curr_output):
-        predicted_output = sum([self.S[self.monitored_var][i] * self.past_control_moves[i] for i in range(self.model_length -1)])
-        predicted_output += self.S[self.monitored_var][-1] * self.past_inputs[-1]
+        predicted_output = sum([self.S[i] * self.past_control_moves[i] for i in range(self.model_length -1)])
+        predicted_output += self.S[-1] * self.past_inputs[-1]
         return np.full((self.prediction_horizon,1), curr_output - predicted_output)
 
     def compute_control_moves_vector(self):
@@ -105,7 +105,7 @@ class MPC:
         disturbances_vector = self.compute_disturbance_vector(curr_output)
         control_moves_vector = self.compute_control_moves_vector()
         inputs_vector = self.compute_inputs_vector()
-        unforced_predictions = (np.dot(self.step_matrix_past, control_moves_vector) + np.multiply(self.S[self.monitored_var][-1], inputs_vector) + disturbances_vector)
+        unforced_predictions = (np.dot(self.step_matrix_past, control_moves_vector) + np.multiply(self.S[-1], inputs_vector) + disturbances_vector)
         unforced_error = self.setpoint - unforced_predictions
         next_control_moves = np.dot(np.linalg.inv(np.dot(self.step_matrix_future.T, self.step_matrix_future)+ self.W), np.dot(self.step_matrix_future.T, unforced_error))
         next_move = next_control_moves[0] # We only need the next control move

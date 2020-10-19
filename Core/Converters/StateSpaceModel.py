@@ -123,8 +123,9 @@ class DiscreteStateSpaceModel(StateSpaceModel):
         #Apply constraints
         for ix in self.constraints.keys():
             bounds = self.constraints[ix]
-            u[0][ix] = min(max(bounds[0], u[ix]),bounds[1])
+            u[ix] = min(max(bounds[0], u[ix]),bounds[1])
 
         # Apply timestep
+        a = np.dot(self.D, u)
         self.Y = np.dot(self.C, self.X) + np.dot(self.D, u)
         self.X = np.dot(self.A, self.X) + np.dot(self.B, u)
